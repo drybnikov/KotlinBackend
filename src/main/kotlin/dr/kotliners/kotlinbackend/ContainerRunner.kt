@@ -1,7 +1,7 @@
 package dr.kotliners.kotlinbackend
 
 fun main(args: Array<String>) {
-    println("Hello, World!")
+    println("Spark Service running...")
 
     ServiceRunner().run()
 }
