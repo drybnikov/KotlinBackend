@@ -1,0 +1,13 @@
+language: kotlin
+android:
+  components:
+
+env:
+  global:
+    # install timeout in minutes (2 minutes by default)
+
+# Run assemble, unit tests, and create coverage report
+before_install:
+  - chmod +x gradlew
+script:
+  - ./gradlew clean assemble
