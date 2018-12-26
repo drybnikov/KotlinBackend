@@ -1,6 +1,5 @@
 language: kotlin
-android:
-  components:
+kotlin:
 
 env:
   global:
@@ -10,4 +9,4 @@ env:
 before_install:
   - chmod +x gradlew
 script:
-  - ./gradlew clean assemble
+  - ./gradlew clean build
