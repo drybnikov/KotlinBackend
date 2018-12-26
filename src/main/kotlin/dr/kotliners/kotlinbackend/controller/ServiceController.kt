@@ -5,7 +5,6 @@ import dr.kotliners.kotlinbackend.model.ResponseError
 import spark.Spark.*
 import spark.kotlin.after
 import spark.kotlin.get
-import sun.plugin2.util.PojoUtil.toJson
 import javax.inject.Inject
 
 const val USER_ID = "userID"
@@ -39,7 +38,7 @@ class ServiceController {
             exception(IllegalArgumentException::class.java) { e, _, res ->
                 res.status(400)
                 res.type(CONTENT_TYPE)
-                res.body(toJson(ResponseError(e)))
+                res.body(responseTransformer.render(ResponseError(e)))
             }
         }
 
