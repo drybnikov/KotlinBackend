@@ -5,12 +5,15 @@ import dr.kotliners.kotlinbackend.dao.UserDao
 import dr.kotliners.kotlinbackend.model.Account
 import dr.kotliners.kotlinbackend.model.Transaction
 import dr.kotliners.kotlinbackend.model.User
+import dr.kotliners.kotlinbackend.service.TransferService
 import java.util.*
+import java.util.concurrent.CompletableFuture
 import javax.inject.Inject
 
 class InternalServiceImpl @Inject constructor(
     private val userDao: UserDao,
-    private val accountDao: AccountDao
+    private val accountDao: AccountDao,
+    private val transferService: TransferService
 ) : InternalService {
 
     override fun users(): MutableCollection<User> {
@@ -28,8 +31,8 @@ class InternalServiceImpl @Inject constructor(
     }
 
     override fun depositMoney(userId: Int, deposit: String?): Transaction =
-        accountDao.depositMoney(
-            accountId = userAccount(userId).id,
+        transferService.depositMoney(
+            account = userAccount(userId),
             depositString = deposit
         )
 
@@ -38,12 +41,11 @@ class InternalServiceImpl @Inject constructor(
             throw IllegalArgumentException("Can not transfer to himself.")
 
         findUserById(destinationUserId?.toIntOrNull()).let {
-            return accountDao.transferMoney(
-                sourceAccountId = userAccount(sourceUserId).id,
-                destinationAccountId = userAccount(it.id).id,
+            return transferService.transferMoney(
+                sourceAccount = userAccount(sourceUserId),
+                destinationAccount = userAccount(it.id),
                 transferString = amount
             )
         }
     }
-
 }
