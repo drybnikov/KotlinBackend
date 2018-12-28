@@ -6,13 +6,17 @@ import dr.kotliners.kotlinbackend.injection.ServiceComponent
 import org.slf4j.LoggerFactory
 
 class ServiceRunner {
+    init {
+        serviceComponent = DaggerServiceComponent.builder()
+            .build()
+    }
 
     fun run() {
         initControllers()
     }
 
     private fun initControllers() {
-       ServiceController()
+        ServiceController()
     }
 
     companion object {
@@ -21,10 +25,5 @@ class ServiceRunner {
         //platformStatic allow access it from java code
         @JvmStatic
         lateinit var serviceComponent: ServiceComponent
-    }
-
-    init {
-        serviceComponent = DaggerServiceComponent.builder()
-            .build()
     }
 }

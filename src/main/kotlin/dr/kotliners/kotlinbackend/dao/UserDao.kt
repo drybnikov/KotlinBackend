@@ -18,7 +18,7 @@ class UserDao @Inject constructor() {
 
     private var lastId: AtomicInteger = AtomicInteger(data.size - 1)
 
-    fun users() = data.values
+    fun users() = data.values.toList()
 
     fun save(name: String, email: String) {
         val id = lastId.incrementAndGet()

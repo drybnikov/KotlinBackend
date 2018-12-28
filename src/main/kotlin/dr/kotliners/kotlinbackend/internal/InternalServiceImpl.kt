@@ -15,7 +15,7 @@ class InternalServiceImpl @Inject constructor(
     private val transferService: TransferService
 ) : InternalService {
 
-    override fun users(): MutableCollection<User> {
+    override fun users(): List<User> {
         return userDao.users()
     }
 

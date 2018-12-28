@@ -5,7 +5,7 @@ import dr.kotliners.kotlinbackend.model.Transaction
 import dr.kotliners.kotlinbackend.model.User
 
 interface InternalService {
-    fun users(): MutableCollection<User>
+    fun users(): List<User>
 
     fun findUserById(id: Int?): User
 
