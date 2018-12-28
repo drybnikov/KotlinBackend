@@ -5,6 +5,7 @@ import dr.kotliners.kotlinbackend.model.ResponseError
 import spark.Spark.*
 import spark.kotlin.after
 import spark.kotlin.get
+import java.lang.Exception
 import javax.inject.Inject
 
 const val USER_ID = "userID"
@@ -35,7 +36,7 @@ class ServiceController {
                 get("/account/transfer", routeAccountTransfer(), responseTransformer)
             }
 
-            exception(IllegalArgumentException::class.java) { e, _, res ->
+            exception(Exception::class.java) { e, _, res ->
                 res.status(400)
                 res.type(CONTENT_TYPE)
                 res.body(responseTransformer.render(ResponseError(e)))

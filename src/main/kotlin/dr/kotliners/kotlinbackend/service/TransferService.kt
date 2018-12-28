@@ -1,41 +1,85 @@
 package dr.kotliners.kotlinbackend.service
 
+import dr.kotliners.kotlinbackend.dao.AccountDao
+import dr.kotliners.kotlinbackend.dao.TransactionDao
+import dr.kotliners.kotlinbackend.exception.OptimisticLockException
 import dr.kotliners.kotlinbackend.model.Account
 import dr.kotliners.kotlinbackend.model.Transaction
+import dr.kotliners.kotlinbackend.model.TransactionType
+import org.slf4j.LoggerFactory
+import java.math.BigDecimal
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.locks.StampedLock
 import javax.inject.Inject
 
-class TransferService @Inject constructor() {
-    fun depositMoney(account: Account, depositString: String?): Transaction {
+private const val POOL_SIZE = 4
+
+class TransferService @Inject constructor(
+    private val accountDao: AccountDao,
+    private val transactionDao: TransactionDao
+) {
+    private val LOG = LoggerFactory.getLogger(TransferService::class.java)
+
+    private val transferLocks = ConcurrentHashMap<Int, StampedLock>(POOL_SIZE * 2)
+    private val receivers = Executors.newFixedThreadPool(POOL_SIZE)
+
+    fun depositMoney(userId: Int, depositString: String?): Transaction {
         val deposit = depositString.toBigDecimalOrThrow()
 
-        synchronized(account) {
-            val transaction = Transaction.depositTransaction(account.id, deposit)
-            account.transactions.add(transaction)
-            account.amount = account.amount.add(deposit)
+        return updateAmount(userId, deposit, TransactionType.DEPOSIT)
+    }
+
+    fun transferMoney(sourceUserId: Int, destinationUserId: Int, transferString: String?): Transaction {
+        val transferValue = transferString.toBigDecimalOrThrow()
+
+        val sendTransaction = updateAmount(sourceUserId, transferValue.negate(), TransactionType.TRANSFER)
+        receivers.submit {
+            updateAmount(destinationUserId, transferValue, TransactionType.TRANSFER)
+        }
+        return sendTransaction
+    }
+
+    fun transactionHistory(accountId: Long): List<Transaction> {
+        return transactionDao.findByAccountId(accountId)
+            .sortedByDescending { it.date }
+    }
+
+    private fun updateAmount(userId: Int, value: BigDecimal, type: TransactionType): Transaction {
+        val lock = transferLocks.computeIfAbsent(userId) { StampedLock() }
+        var stamp = lock.tryOptimisticRead()
+        try {
+            val account = findAccount(userId)
+
+            val transaction = Transaction.transactionByType(account.id, value, type)
+            stamp = storeTransaction(lock, stamp, transaction)
 
             return transaction
+        } finally {
+            if (lock.tryConvertToWriteLock(stamp) != 0L) {
+                transferLocks.remove(userId)
+            }
         }
     }
 
-    fun transferMoney(sourceAccount: Account, destinationAccount: Account, transferString: String?): Transaction {
-        val transferValue = transferString.toBigDecimalOrThrow()
+    private fun findAccount(userId: Int): Account {
+        return accountDao.findByUserId(userId)
+            ?: accountDao.create(userId = userId, currency = Currency.getInstance("USD"))
+    }
 
-        synchronized(sourceAccount) {
-            if (sourceAccount.amount < transferValue) throw IllegalArgumentException("Insufficient funds in the account")
-
-            val sourceTransaction =
-                Transaction.transferTransaction(destinationAccount.id, transferValue.negate())
-            sourceAccount.transactions.add(sourceTransaction)
-
-            destinationAccount.transactions.add(
-                Transaction.transferTransaction(sourceAccount.id, transferValue)
-            )
-
-            sourceAccount.amount = sourceAccount.amount.subtract(transferValue)
-            destinationAccount.amount = destinationAccount.amount.add(transferValue)
-
-            return sourceTransaction
+    private fun storeTransaction(lock: StampedLock, readStamp: Long, transaction: Transaction): Long {
+        var stamp = lock.tryConvertToWriteLock(readStamp)
+        if (stamp == 0L) {
+            throw OptimisticLockException(transaction)
+        } else {
+            try {
+                transactionDao.run { transaction.store() }
+            } finally {
+                stamp = lock.tryConvertToOptimisticRead(stamp)
+            }
         }
+        return stamp
     }
 
     private fun String?.toBigDecimalOrThrow() =

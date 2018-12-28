@@ -7,7 +7,6 @@ import dr.kotliners.kotlinbackend.model.Transaction
 import dr.kotliners.kotlinbackend.model.User
 import dr.kotliners.kotlinbackend.service.TransferService
 import java.util.*
-import java.util.concurrent.CompletableFuture
 import javax.inject.Inject
 
 class InternalServiceImpl @Inject constructor(
@@ -26,13 +25,18 @@ class InternalServiceImpl @Inject constructor(
     }
 
     override fun userAccount(userId: Int): Account {
-        return accountDao.findByUserId(userId)
+        val account = accountDao.findByUserId(userId)
             ?: accountDao.create(userId = userId, currency = Currency.getInstance("USD"))
+
+        return account.apply {
+            transactions.clear()
+            transactions.addAll(transferService.transactionHistory(id))
+        }
     }
 
     override fun depositMoney(userId: Int, deposit: String?): Transaction =
         transferService.depositMoney(
-            account = userAccount(userId),
+            userId = userId,
             depositString = deposit
         )
 
@@ -42,8 +46,8 @@ class InternalServiceImpl @Inject constructor(
 
         findUserById(destinationUserId?.toIntOrNull()).let {
             return transferService.transferMoney(
-                sourceAccount = userAccount(sourceUserId),
-                destinationAccount = userAccount(it.id),
+                sourceUserId = sourceUserId,
+                destinationUserId = it.id,
                 transferString = amount
             )
         }

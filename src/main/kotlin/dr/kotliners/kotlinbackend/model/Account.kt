@@ -2,14 +2,14 @@ package dr.kotliners.kotlinbackend.model
 
 import java.math.BigDecimal
 import java.util.*
-import kotlin.collections.HashSet
+import kotlin.collections.ArrayList
 
 data class Account(
     val id: Long,
     val userId: Int,
     val currency: Currency,
     var amount: BigDecimal,
-    val transactions: HashSet<Transaction>
+    val transactions: ArrayList<Transaction>
 )
 
 data class Transaction(
@@ -20,14 +20,14 @@ data class Transaction(
     val date: Long
 ) {
     companion object {
-        fun depositTransaction(accountId: Long, deposit: BigDecimal): Transaction {
+        fun transactionByType(accountId: Long, value: BigDecimal, type: TransactionType): Transaction {
             val transactionId = UUID.randomUUID().leastSignificantBits
             return Transaction(
                 id = transactionId,
                 accountId = accountId,
                 date = System.currentTimeMillis(),
-                type = TransactionType.DEPOSIT,
-                value = deposit
+                type = type,
+                value = value
             )
         }
 

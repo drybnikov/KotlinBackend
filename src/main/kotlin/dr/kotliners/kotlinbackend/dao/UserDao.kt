@@ -3,7 +3,9 @@ package dr.kotliners.kotlinbackend.dao
 import dr.kotliners.kotlinbackend.model.User
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class UserDao @Inject constructor() {
     private val data by lazy {
         hashMapOf(
