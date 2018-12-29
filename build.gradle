@@ -11,13 +11,6 @@ repositories {
     mavenCentral()
 }
 
-test {
-    // enable JUnit Platform (a.k.a. JUnit 5) support
-    useJUnitPlatform {
-        includeEngines("junit-jupiter")
-    }
-}
-
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     compile "com.sparkjava:spark-kotlin:1.0.0-alpha"
