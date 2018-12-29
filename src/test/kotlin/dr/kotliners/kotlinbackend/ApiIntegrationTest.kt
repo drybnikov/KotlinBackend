@@ -8,16 +8,13 @@ import dr.kotliners.kotlinbackend.model.Account
 import dr.kotliners.kotlinbackend.model.ResponseError
 import dr.kotliners.kotlinbackend.model.Transaction
 import dr.kotliners.kotlinbackend.model.User
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import spark.Spark.stop
 import spark.servlet.SparkApplication
 import java.math.BigDecimal
 import java.util.concurrent.Executors
-
 
 class TestSparkApplication : SparkApplication {
     override fun init() {
@@ -28,15 +25,11 @@ class TestSparkApplication : SparkApplication {
 @DisplayName("API Integration")
 internal class KotlinBackendAppTest {
     private val LOG = LoggerFactory.getLogger(KotlinBackendAppTest::class.java.simpleName)
-    private var app = KotlinBackendApp().run()
-
-    private lateinit var testServer: SparkServer<TestSparkApplication>
     private val gson = Gson()
-    private var executor = Executors.newFixedThreadPool(2)
 
     @BeforeEach
     fun setUp() {
-        testServer = SparkServer(TestSparkApplication::class.java, 4567)
+
     }
 
     @Test
@@ -129,7 +122,6 @@ internal class KotlinBackendAppTest {
             assertTrue(errorTransaction.message.contains("Optimistic lock exception:"))
 
             LOG.info("GET: $url2 -> $errorTransaction")
-            executor.shutdown()
         }
 
         val url = "/user/account/deposit?amount=1000"
@@ -221,6 +213,24 @@ internal class KotlinBackendAppTest {
         gson.fromJson(String(body()), object : TypeToken<T>() {}.type)
 
     companion object {
+        lateinit var testServer: SparkServer<TestSparkApplication>
+        private var executor = Executors.newFixedThreadPool(2)
+
+        @BeforeAll
+        @JvmStatic
+        fun setupAll() {
+            KotlinBackendApp().run()
+
+            testServer = SparkServer(TestSparkApplication::class.java, 4567)
+        }
+
+        @AfterAll
+        @JvmStatic
+        fun cleanupAll() {
+            executor.shutdown()
+            stop()
+        }
+
         private val USER_0 = User(name = "Alice", email = "alice@alice.kt", id = 0)
         private val USER_1 = User(name = "Bob", email = "bob@bob.kt", id = 1)
         private val USER_2 = User(name = "Carol", email = "carol@carol.kt", id = 2)
