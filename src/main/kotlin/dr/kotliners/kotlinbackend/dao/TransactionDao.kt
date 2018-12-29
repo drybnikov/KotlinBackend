@@ -1,7 +1,7 @@
 package dr.kotliners.kotlinbackend.dao
 
-import dr.kotliners.kotlinbackend.model.Transaction
 import dr.kotliners.kotlinbackend.exception.InsufficientFundsException
+import dr.kotliners.kotlinbackend.model.Transaction
 import java.math.BigDecimal
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -17,7 +17,7 @@ class TransactionDao @Inject constructor(private val accountDao: AccountDao) {
         if (balance.add(value) < BigDecimal.ZERO) {
             throw InsufficientFundsException(this)
         }
-        Thread.sleep(1000)//Simulate long operations
+        Thread.sleep(500)//Simulate long operations
         accountDao.updateAmount(accountId, value)
         findByAccountId(accountId).add(this)
     }

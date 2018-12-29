@@ -53,7 +53,10 @@ class TransferService @Inject constructor(
             val account = findAccount(userId)
 
             val transaction = Transaction.transactionByType(account.id, value, type)
+            LOG.info("${transaction.type}:$value store. Current amount:${account.amount}, id:${transaction.id}. Optimistic Lock Valid:${lock.validate(stamp)}")
             stamp = storeTransaction(lock, stamp, transaction)
+
+            LOG.info("${transaction.type}:$value done. Current amount:${account.amount}, id:${transaction.id}. Optimistic Lock Valid:${lock.validate(stamp)}")
 
             return transaction
         } finally {

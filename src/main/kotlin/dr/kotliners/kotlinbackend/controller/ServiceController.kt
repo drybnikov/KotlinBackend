@@ -5,7 +5,6 @@ import dr.kotliners.kotlinbackend.model.ResponseError
 import spark.Spark.*
 import spark.kotlin.after
 import spark.kotlin.get
-import java.lang.Exception
 import javax.inject.Inject
 
 const val USER_ID = "userID"
@@ -32,8 +31,8 @@ class ServiceController {
             with(gateway) {
                 get("", routeUserInfo(), responseTransformer)
                 get("/account", routeUserAccountInfo(), responseTransformer)
-                get("/account/deposit", routeAccountDeposit(), responseTransformer)
-                get("/account/transfer", routeAccountTransfer(), responseTransformer)
+                get("/account/deposit", routeAccountDeposit(), responseTransformer) //Should be POST for Real API
+                get("/account/transfer", routeAccountTransfer(), responseTransformer) //Should be POST for Real API
             }
 
             exception(Exception::class.java) { e, _, res ->
