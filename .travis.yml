@@ -9,4 +9,4 @@ env:
 before_install:
   - chmod +x gradlew
 script:
-  - ./gradlew clean build test
+  - ./gradlew clean build
