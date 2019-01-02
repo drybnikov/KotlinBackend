@@ -1,6 +1,6 @@
 package dr.kotliners.kotlinbackend.controller
 
-import dr.kotliners.kotlinbackend.ServiceRunner
+import dr.kotliners.kotlinbackend.KotlinBackendApp
 import dr.kotliners.kotlinbackend.model.ResponseError
 import spark.Spark.*
 import spark.kotlin.after
@@ -17,7 +17,7 @@ class ServiceController {
     lateinit var responseTransformer: JsonResponseTransformer
 
     init {
-        ServiceRunner.serviceComponent.inject(this)
+        KotlinBackendApp.serviceComponent.inject(this)
 
         initRoutes()
     }
