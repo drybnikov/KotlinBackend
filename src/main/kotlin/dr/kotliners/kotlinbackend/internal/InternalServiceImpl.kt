@@ -15,13 +15,15 @@ class InternalServiceImpl @Inject constructor(
     private val transferService: TransferService
 ) : InternalService {
 
-    override fun users(): List<User> {
-        return userDao.users()
-    }
+    override fun users() =
+        userDao.allUsers().map { User.fromUserDB(it) }
 
     override fun findUserById(id: Int?): User {
-        return userDao.findById(id)
+        if (id == null) throw IllegalArgumentException("User not found.")
+        val user = userDao.findUserById(id)
             ?: throw IllegalArgumentException("User not found.")
+
+        return User.fromUserDB(user)
     }
 
     override fun userAccount(userId: Int): Account {
@@ -43,7 +45,6 @@ class InternalServiceImpl @Inject constructor(
     override fun transferMoney(sourceUserId: Int, destinationUserId: String?, amount: String?): Transaction {
         if (sourceUserId == destinationUserId?.toIntOrNull())
             throw IllegalArgumentException("Can not transfer to himself.")
-
         findUserById(destinationUserId?.toIntOrNull()).let {
             return transferService.transferMoney(
                 sourceUserId = sourceUserId,

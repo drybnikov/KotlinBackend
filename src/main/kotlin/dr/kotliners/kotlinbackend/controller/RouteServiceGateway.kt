@@ -1,6 +1,7 @@
 package dr.kotliners.kotlinbackend.controller
 
 import dr.kotliners.kotlinbackend.internal.InternalService
+import dr.kotliners.kotlinbackend.model.User
 import spark.Route
 import spark.Session
 import spark.kotlin.RouteHandler
@@ -15,7 +16,6 @@ class RouteServiceGateway @Inject constructor(
 
     internal fun routeUserInfo() = Route { req, _ ->
         val userId = req.session().getUserId()
-
         service.findUserById(userId)
     }
 

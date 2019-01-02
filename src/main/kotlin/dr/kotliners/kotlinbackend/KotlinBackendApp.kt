@@ -1,14 +1,13 @@
 package dr.kotliners.kotlinbackend
 
 import dr.kotliners.kotlinbackend.controller.ServiceController
-import dr.kotliners.kotlinbackend.injection.DaggerServiceComponent
 import dr.kotliners.kotlinbackend.injection.ServiceComponent
 import org.slf4j.LoggerFactory
 
 class KotlinBackendApp {
 
     init {
-        serviceComponent = DaggerServiceComponent.builder().build()
+        serviceComponent = ServiceComponent.createComponent(this)
     }
 
     fun run() {

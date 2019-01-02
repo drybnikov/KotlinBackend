@@ -156,7 +156,7 @@ internal class KotlinBackendAppTest {
     @DisplayName("GET /user/account/transfer?to=:id&amount=:value")
     fun `transfer between accounts`() {
         val depositUrl = "/user/account/deposit?amount=1000"
-        val transferUrl = "/user/account/transfer?to=3&amount=555"
+        val transferUrl = "/user/account/transfer?to=4&amount=555"
         val accountUrl = "/user/account"
         val sessionId = loginUser(USER_2.id)
 
@@ -179,7 +179,7 @@ internal class KotlinBackendAppTest {
     @Test
     @DisplayName("GET /user/account/transfer?to=:id&amount=:value (Insufficient funds)")
     fun `error when transfer more than amount`() {
-        val transferUrl = "/user/account/transfer?to=0&amount=1000"
+        val transferUrl = "/user/account/transfer?to=1&amount=1000"
         val accountUrl = "/user/account"
         val sessionId = loginUser(USER_3.id)
 
@@ -231,9 +231,9 @@ internal class KotlinBackendAppTest {
             stop()
         }
 
-        private val USER_0 = User(name = "Alice", email = "alice@alice.kt", id = 0)
-        private val USER_1 = User(name = "Bob", email = "bob@bob.kt", id = 1)
-        private val USER_2 = User(name = "Carol", email = "carol@carol.kt", id = 2)
-        private val USER_3 = User(name = "Dave", email = "dave@dave.kt", id = 3)
+        private val USER_0 = User(name = "Alice", email = "alice@alice.kt", id = 1)
+        private val USER_1 = User(name = "Bob", email = "bob@bob.kt", id = 2)
+        private val USER_2 = User(name = "Carol", email = "carol@carol.kt", id = 3)
+        private val USER_3 = User(name = "Dave", email = "dave@dave.kt", id = 4)
     }
 }

@@ -1,43 +1,54 @@
 package dr.kotliners.kotlinbackend.dao
 
-import dr.kotliners.kotlinbackend.model.User
-import java.util.concurrent.atomic.AtomicInteger
+import dr.kotliners.kotlinbackend.model.UserDB
+import dr.kotliners.kotlinbackend.model.Users
+import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.StdOutSqlLogger
+import org.jetbrains.exposed.sql.addLogger
+import org.jetbrains.exposed.sql.transactions.transaction
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class UserDao @Inject constructor() {
-    private val data by lazy {
-        hashMapOf(
-            0 to User(name = "Alice", email = "alice@alice.kt", id = 0),
-            1 to User(name = "Bob", email = "bob@bob.kt", id = 1),
-            2 to User(name = "Carol", email = "carol@carol.kt", id = 2),
-            3 to User(name = "Dave", email = "dave@dave.kt", id = 3)
-        )
-    }
 
-    private var lastId: AtomicInteger = AtomicInteger(data.size - 1)
+    fun findUserById(id: Int): UserDB? =
+        transaction {
+            addLogger(StdOutSqlLogger)
+            UserDB.findById(id)
+        }
 
-    fun users() = data.values.toList()
+    fun allUsers(): List<UserDB> =
+        transaction {
+            UserDB.all().sortedBy { it.name }
+        }
 
-    fun save(name: String, email: String) {
-        val id = lastId.incrementAndGet()
-        data.put(id, User(name = name, email = email, id = id))
-    }
 
-    fun findById(id: Int?): User? {
-        return data[id]
-    }
+    fun createTestData() {
+        transaction {
+            addLogger(StdOutSqlLogger)
 
-    fun findByEmail(email: String): User? {
-        return data.values.find { it.email == email }
-    }
+            SchemaUtils.create(Users)
 
-    fun update(id: Int, name: String, email: String) {
-        data.put(id, User(name = name, email = email, id = id))
-    }
+            UserDB.new {
+                name = "Alice"
+                email = "alice@alice.kt"
+            }
 
-    fun delete(id: Int) {
-        data.remove(id)
+            UserDB.new {
+                name = "Bob"
+                email = "bob@bob.kt"
+            }
+
+            UserDB.new {
+                name = "Carol"
+                email = "carol@carol.kt"
+            }
+
+            UserDB.new {
+                name = "Dave"
+                email = "dave@dave.kt"
+            }
+        }
     }
 }

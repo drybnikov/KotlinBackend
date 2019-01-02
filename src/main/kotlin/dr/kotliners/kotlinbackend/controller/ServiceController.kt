@@ -15,11 +15,18 @@ class ServiceController {
     lateinit var gateway: RouteServiceGateway
     @Inject
     lateinit var responseTransformer: JsonResponseTransformer
+    @Inject
+    lateinit var databaseController: DatabaseController
 
     init {
         KotlinBackendApp.serviceComponent.inject(this)
 
+        initDB()
         initRoutes()
+    }
+
+    private fun initDB() {
+        databaseController.initDB()
     }
 
     private fun initRoutes() {
