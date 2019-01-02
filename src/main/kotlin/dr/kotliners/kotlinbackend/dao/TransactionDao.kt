@@ -2,27 +2,40 @@ package dr.kotliners.kotlinbackend.dao
 
 import dr.kotliners.kotlinbackend.exception.InsufficientFundsException
 import dr.kotliners.kotlinbackend.model.Transaction
+import dr.kotliners.kotlinbackend.model.TransactionDB
+import dr.kotliners.kotlinbackend.model.Transactions
+import org.jetbrains.exposed.sql.StdOutSqlLogger
+import org.jetbrains.exposed.sql.addLogger
+import org.jetbrains.exposed.sql.transactions.transaction
+import org.joda.time.DateTime
 import java.math.BigDecimal
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
 class TransactionDao @Inject constructor(private val accountDao: AccountDao) {
-    private val transactionsData = ConcurrentHashMap<UUID, HashSet<Transaction>>()
 
-    fun Transaction.store() {
-        val balance = accountDao.findById(accountId).amount
+    fun storeTransaction(tr: Transaction) {
+        transaction {
+            addLogger(StdOutSqlLogger)
 
-        if (balance.add(value) < BigDecimal.ZERO) {
-            throw InsufficientFundsException(this)
+            val accountDB = accountDao.findById(tr.accountId)
+            if (accountDB.amount.add(tr.value) < BigDecimal.ZERO) {
+                throw InsufficientFundsException(tr)
+            }
+
+            accountDB.amount = accountDB.amount.add(tr.value)
+
+            TransactionDB.new {
+                account = accountDB
+                value = tr.value
+                type = tr.type
+                date = DateTime(tr.date)
+            }
         }
-        Thread.sleep(500)//Simulate long operations
-        accountDao.updateAmount(accountId, value)
-        findByAccountId(accountId).add(this)
     }
 
-    fun findByAccountId(accountId: UUID) =
-        transactionsData.computeIfAbsent(accountId) { emptySet<Transaction>().toHashSet() }
+    fun findByAccountId(accountId: UUID): List<TransactionDB> =
+        transaction {
+            TransactionDB.find { Transactions.account eq accountId }.sortedByDescending { it.date }
+        }
 }

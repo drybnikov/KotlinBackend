@@ -34,12 +34,8 @@ class InternalServiceImpl @Inject constructor(
             amount = accountDB.amount,
             userId = userId,
             currency = Currency.getInstance(accountDB.currency),
-            transactions = transferService.transactionHistory(accountDB.id.value).toList()
+            transactions = transferService.transactionHistory(accountDB.id.value)
         )
-        /*.apply {
-            transactions.clear()
-            transactions.addAll(transferService.transactionHistory(id))
-        }*/
     }
 
     override fun depositMoney(userId: Int, deposit: String?): Transaction =

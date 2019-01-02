@@ -18,17 +18,6 @@ class AccountDao @Inject constructor() {
                 ?: throw IllegalArgumentException("Account :${accountId.node()} not found")
         }
 
-
-    fun updateAmount(accountId: UUID, value: BigDecimal) {
-        transaction {
-            addLogger(StdOutSqlLogger)
-
-            val account = AccountDB[accountId]
-            account.amount = account.amount.add(value)
-        }
-
-    }
-
     fun findByUser(userId: Int): AccountDB {
         return transaction {
             addLogger(StdOutSqlLogger)

@@ -3,7 +3,6 @@ package dr.kotliners.kotlinbackend.service
 import dr.kotliners.kotlinbackend.dao.AccountDao
 import dr.kotliners.kotlinbackend.dao.TransactionDao
 import dr.kotliners.kotlinbackend.exception.OptimisticLockException
-import dr.kotliners.kotlinbackend.model.Account
 import dr.kotliners.kotlinbackend.model.AccountDB
 import dr.kotliners.kotlinbackend.model.Transaction
 import dr.kotliners.kotlinbackend.model.TransactionType
@@ -44,7 +43,13 @@ class TransferService @Inject constructor(
 
     fun transactionHistory(accountId: UUID): List<Transaction> {
         return transactionDao.findByAccountId(accountId)
-            .sortedByDescending { it.date }
+            .map { Transaction(
+                id = it.id.value,
+                accountId = accountId,
+                value = it.value,
+                type = it.type,
+                date = it.date.millis
+            ) }
     }
 
     private fun updateAmount(userId: Int, value: BigDecimal, type: TransactionType): Transaction {
@@ -54,10 +59,18 @@ class TransferService @Inject constructor(
             val account = findAccount(userId)
 
             val transaction = Transaction.transactionByType(account.id.value, value, type)
-            LOG.info("${transaction.type}:$value store. Current amount:${account.amount}, id:${transaction.id}. Optimistic Lock Valid:${lock.validate(stamp)}")
+            LOG.info(
+                "${transaction.type}:$value store. Current amount:${account.amount}, id:${transaction.id}. Optimistic Lock Valid:${lock.validate(
+                    stamp
+                )}"
+            )
             stamp = storeTransaction(lock, stamp, transaction)
 
-            LOG.info("${transaction.type}:$value done. Current amount:${account.amount}, id:${transaction.id}. Optimistic Lock Valid:${lock.validate(stamp)}")
+            LOG.info(
+                "${transaction.type}:$value done. Current amount:${account.amount}, id:${transaction.id}. Optimistic Lock Valid:${lock.validate(
+                    stamp
+                )}"
+            )
 
             return transaction
         } finally {
@@ -77,7 +90,7 @@ class TransferService @Inject constructor(
             throw OptimisticLockException(transaction)
         } else {
             try {
-                transactionDao.run { transaction.store() }
+                transactionDao.storeTransaction(transaction)
             } finally {
                 stamp = lock.tryConvertToOptimisticRead(stamp)
             }
