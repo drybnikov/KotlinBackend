@@ -1,51 +1,41 @@
 package dr.kotliners.kotlinbackend.model
 
+import org.jetbrains.exposed.dao.EntityID
+import org.jetbrains.exposed.dao.UUIDEntity
+import org.jetbrains.exposed.dao.UUIDEntityClass
+import org.jetbrains.exposed.dao.UUIDTable
 import java.math.BigDecimal
 import java.util.*
-import kotlin.collections.ArrayList
 
 data class Account(
-    val id: Long,
+    val id: UUID,
     val userId: Int,
     val currency: Currency,
     var amount: BigDecimal,
-    val transactions: ArrayList<Transaction>
-)
-
-data class Transaction(
-    val id: Long,
-    val accountId: Long,
-    val value: BigDecimal,
-    val type: TransactionType,
-    val date: Long
+    val transactions: List<Transaction>
 ) {
     companion object {
-        fun transactionByType(accountId: Long, value: BigDecimal, type: TransactionType): Transaction {
-            val transactionId = UUID.randomUUID().leastSignificantBits
-            return Transaction(
-                id = transactionId,
-                accountId = accountId,
-                date = System.currentTimeMillis(),
-                type = type,
-                value = value
+        fun fromDB(accountDB: AccountDB) =
+            Account(
+                id = accountDB.id.value,
+                amount = accountDB.amount,
+                userId = accountDB.user.id.value,
+                currency = Currency.getInstance(accountDB.currency),
+                transactions = ArrayList()
             )
-        }
-
-        fun transferTransaction(accountId: Long, value: BigDecimal): Transaction {
-            val transactionId = UUID.randomUUID().mostSignificantBits
-            return Transaction(
-                id = transactionId,
-                accountId = accountId,
-                date = System.currentTimeMillis(),
-                type = TransactionType.TRANSFER,
-                value = value
-            )
-        }
     }
 }
 
-enum class TransactionType {
-    TRANSFER,
-    WITHDRAWAL,
-    DEPOSIT
+object Accounts : UUIDTable() {
+    val user = reference("user", Users)
+    val currency = varchar("currency", 5)
+    val amount = decimal("amount", 18, 2)
+}
+
+class AccountDB(id: EntityID<UUID>) : UUIDEntity(id) {
+    companion object : UUIDEntityClass<AccountDB>(Accounts)
+
+    var user by UserDB referencedOn Accounts.user
+    var currency by Accounts.currency
+    var amount by Accounts.amount
 }

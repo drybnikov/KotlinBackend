@@ -140,7 +140,7 @@ internal class KotlinBackendAppTest {
         val sessionId = loginUser(USER_1.id)
 
         var account: Account = givenResponse(accountUrl, sessionId)
-        assertEquals(account.amount, BigDecimal(0))
+        assertEquals(account.amount, BigDecimal("0.00"))
         LOG.info("GET: $accountUrl -> $account")
 
         val transaction: Transaction = givenResponse(depositUrl, sessionId)
@@ -148,7 +148,7 @@ internal class KotlinBackendAppTest {
         LOG.info("GET: $depositUrl -> $transaction")
 
         account = givenResponse(accountUrl, sessionId)
-        assertEquals(account.amount, BigDecimal(1000))
+        assertEquals(account.amount, BigDecimal("1000.00"))
         LOG.info("GET: $accountUrl -> $account")
     }
 
@@ -164,15 +164,15 @@ internal class KotlinBackendAppTest {
         LOG.info("GET: $depositUrl -> $depositTransaction")
 
         var account: Account = givenResponse(accountUrl, sessionId)
-        assertEquals(account.amount, BigDecimal(1000))
+        assertEquals(account.amount, BigDecimal("1000.00"))
         LOG.info("GET: $accountUrl -> $account")
 
         val transferTransaction: Transaction = givenResponse(transferUrl, sessionId)
-        assertEquals(transferTransaction.value, BigDecimal(-555))
+        assertEquals(transferTransaction.value, BigDecimal("-555"))
         LOG.info("GET: $transferUrl -> $transferTransaction")
 
         account = givenResponse(accountUrl, sessionId)
-        assertEquals(account.amount, BigDecimal(445))
+        assertEquals(account.amount, BigDecimal("445.00"))
         LOG.info("GET: $accountUrl -> $account")
     }
 

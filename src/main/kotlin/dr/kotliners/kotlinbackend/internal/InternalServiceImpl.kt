@@ -27,13 +27,19 @@ class InternalServiceImpl @Inject constructor(
     }
 
     override fun userAccount(userId: Int): Account {
-        val account = accountDao.findByUserId(userId)
-            ?: accountDao.create(userId = userId, currency = Currency.getInstance("USD"))
+        val accountDB = accountDao.findByUser(userId)
 
-        return account.apply {
+        return Account(
+            id = accountDB.id.value,
+            amount = accountDB.amount,
+            userId = userId,
+            currency = Currency.getInstance(accountDB.currency),
+            transactions = transferService.transactionHistory(accountDB.id.value).toList()
+        )
+        /*.apply {
             transactions.clear()
             transactions.addAll(transferService.transactionHistory(id))
-        }
+        }*/
     }
 
     override fun depositMoney(userId: Int, deposit: String?): Transaction =

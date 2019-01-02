@@ -2,6 +2,7 @@ package dr.kotliners.kotlinbackend.controller
 
 import dr.kotliners.kotlinbackend.KotlinBackendApp
 import dr.kotliners.kotlinbackend.model.ResponseError
+import org.eclipse.jetty.util.log.Log
 import spark.Spark.*
 import spark.kotlin.after
 import spark.kotlin.get
@@ -43,6 +44,8 @@ class ServiceController {
             }
 
             exception(Exception::class.java) { e, _, res ->
+                Log.getLog().warn(e)
+
                 res.status(400)
                 res.type(CONTENT_TYPE)
                 res.body(responseTransformer.render(ResponseError(e)))

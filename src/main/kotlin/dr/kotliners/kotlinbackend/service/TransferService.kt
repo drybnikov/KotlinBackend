@@ -4,6 +4,7 @@ import dr.kotliners.kotlinbackend.dao.AccountDao
 import dr.kotliners.kotlinbackend.dao.TransactionDao
 import dr.kotliners.kotlinbackend.exception.OptimisticLockException
 import dr.kotliners.kotlinbackend.model.Account
+import dr.kotliners.kotlinbackend.model.AccountDB
 import dr.kotliners.kotlinbackend.model.Transaction
 import dr.kotliners.kotlinbackend.model.TransactionType
 import org.slf4j.LoggerFactory
@@ -41,7 +42,7 @@ class TransferService @Inject constructor(
         return sendTransaction
     }
 
-    fun transactionHistory(accountId: Long): List<Transaction> {
+    fun transactionHistory(accountId: UUID): List<Transaction> {
         return transactionDao.findByAccountId(accountId)
             .sortedByDescending { it.date }
     }
@@ -52,7 +53,7 @@ class TransferService @Inject constructor(
         try {
             val account = findAccount(userId)
 
-            val transaction = Transaction.transactionByType(account.id, value, type)
+            val transaction = Transaction.transactionByType(account.id.value, value, type)
             LOG.info("${transaction.type}:$value store. Current amount:${account.amount}, id:${transaction.id}. Optimistic Lock Valid:${lock.validate(stamp)}")
             stamp = storeTransaction(lock, stamp, transaction)
 
@@ -66,9 +67,8 @@ class TransferService @Inject constructor(
         }
     }
 
-    private fun findAccount(userId: Int): Account {
-        return accountDao.findByUserId(userId)
-            ?: accountDao.create(userId = userId, currency = Currency.getInstance("USD"))
+    private fun findAccount(userId: Int): AccountDB {
+        return accountDao.findByUser(userId)
     }
 
     private fun storeTransaction(lock: StampedLock, readStamp: Long, transaction: Transaction): Long {
