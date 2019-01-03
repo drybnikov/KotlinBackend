@@ -1,5 +1,5 @@
 language: java
-install: true
+install: travis_wait mvn install
 
 jdk:
   - oraclejdk8
@@ -8,4 +8,4 @@ jdk:
 before_install:
   - chmod +x gradlew
 script:
-  - ./gradlew clean build
+  - ./gradlew clean build --scan --build-cache --configure-on-demand
