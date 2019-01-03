@@ -22,8 +22,6 @@ class DatabaseController @Inject constructor(
 
     private fun createTestData() {
         transaction {
-            addLogger(StdOutSqlLogger)
-
             SchemaUtils.create(Users, Accounts)
 
             UserDB.new {

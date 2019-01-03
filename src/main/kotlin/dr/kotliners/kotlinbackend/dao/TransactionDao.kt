@@ -8,6 +8,7 @@ import org.jetbrains.exposed.sql.StdOutSqlLogger
 import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.joda.time.DateTime
+import org.joda.time.DateTimeZone
 import java.math.BigDecimal
 import java.util.*
 import javax.inject.Inject
@@ -29,7 +30,7 @@ class TransactionDao @Inject constructor() {
                 account = accountDb
                 value = transferData.value
                 type = transferData.type
-                date = DateTime(System.currentTimeMillis())
+                date = DateTime.now(DateTimeZone.UTC)
             }
         }
 

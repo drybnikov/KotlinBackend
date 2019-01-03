@@ -4,6 +4,11 @@ plugins {
     id 'java'
 }
 
+ext {
+    junitVersion = "5.2.0"
+    daggerVersion = "2.5"
+}
+
 group 'denisr'
 version '0.0.1'
 
@@ -18,16 +23,17 @@ dependencies {
     compile "org.slf4j:slf4j-simple:1.7.24"
 
     // Dagger DI
-    compile "com.google.dagger:dagger:2.5"
-    kapt "com.google.dagger:dagger-compiler:2.5"
+    compile "com.google.dagger:dagger:$daggerVersion"
+    kapt "com.google.dagger:dagger-compiler:$daggerVersion"
 
     compile 'com.google.code.gson:gson:2.8.5'
 
     compile 'com.h2database:h2:1.4.197'
     compile 'org.jetbrains.exposed:exposed:0.11.2'
 
-    testCompile "org.junit.jupiter:junit-jupiter-api:5.2.0"
-    testCompile "org.junit.jupiter:junit-jupiter-engine:5.2.0"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+    testImplementation "com.nhaarman.mockitokotlin2:mockito-kotlin:2.1.0"
     testCompile "com.despegar:spark-test:1.1.8"
 }
 
@@ -41,4 +47,8 @@ jar {
             it.isDirectory() ? it : zipTree(it)
         }
     }
+}
+
+test {
+    useJUnitPlatform()
 }

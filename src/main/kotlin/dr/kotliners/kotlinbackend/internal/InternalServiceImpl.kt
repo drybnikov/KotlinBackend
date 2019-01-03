@@ -2,9 +2,7 @@ package dr.kotliners.kotlinbackend.internal
 
 import dr.kotliners.kotlinbackend.dao.AccountDao
 import dr.kotliners.kotlinbackend.dao.UserDao
-import dr.kotliners.kotlinbackend.model.Account
-import dr.kotliners.kotlinbackend.model.Transaction
-import dr.kotliners.kotlinbackend.model.User
+import dr.kotliners.kotlinbackend.model.*
 import dr.kotliners.kotlinbackend.service.TransferService
 import java.util.*
 import javax.inject.Inject
@@ -16,14 +14,14 @@ class InternalServiceImpl @Inject constructor(
 ) : InternalService {
 
     override fun users() =
-        userDao.allUsers().map { User.fromUserDB(it) }
+        userDao.allUsers().map(UserDB::toJsonUser)
 
     override fun findUserById(id: Int?): User {
         if (id == null) throw IllegalArgumentException("User not found.")
         val user = userDao.findUserById(id)
             ?: throw IllegalArgumentException("User not found.")
 
-        return User.fromUserDB(user)
+        return user.toJsonUser()
     }
 
     override fun userAccount(userId: Int): Account {

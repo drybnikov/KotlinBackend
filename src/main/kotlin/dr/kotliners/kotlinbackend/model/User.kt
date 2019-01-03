@@ -9,15 +9,7 @@ data class User(
     val id: Int,
     val name: String,
     val email: String
-) {
-    companion object {
-        fun fromUserDB(userDb: UserDB) = User(
-            id = userDb.id.value,
-            name = userDb.name,
-            email = userDb.email
-        )
-    }
-}
+)
 
 object Users : IntIdTable() {
     val name = varchar("name", 50)
@@ -30,3 +22,9 @@ class UserDB(id: EntityID<Int>) : IntEntity(id) {
     var name by Users.name
     var email by Users.email
 }
+
+fun UserDB.toJsonUser() = User(
+    id = id.value,
+    name = name,
+    email = email
+)

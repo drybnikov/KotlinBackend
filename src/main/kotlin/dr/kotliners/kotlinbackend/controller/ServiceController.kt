@@ -44,7 +44,7 @@ class ServiceController {
             }
 
             exception(Exception::class.java) { e, _, res ->
-                Log.getLog().warn(e)
+                Log.getLog().debug(e)
 
                 res.status(400)
                 res.type(CONTENT_TYPE)
