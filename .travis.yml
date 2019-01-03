@@ -1,9 +1,8 @@
-language: kotlin
-kotlin:
+language: java
+install: true
 
-env:
-  global:
-    # install timeout in minutes (2 minutes by default)
+jdk:
+  - oraclejdk8
 
 # Run assemble, unit tests, and create coverage report
 before_install:
