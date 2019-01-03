@@ -14,10 +14,10 @@ Simple RESTful API on Kotlin (including data model and the backing implementatio
 
 # Test API:
 <ul>
-    <li><a href='http://localhost:4567/users'>List of users: /users</a></li>
-    <li><a href='http://localhost:4567/login?id=:id'>User login with ID: /login?id=:id</a></li>
-    <li><a href='http://localhost:4567/user'>User details:  /user</a></li>
-    <li><a href='http://localhost:4567/user/account'>User Account details: /user/account</a></li>
-    <li><a href='http://localhost:4567/user/account/deposit?amount=:value'>Deposit: /user/account/deposit?amount=:value</a></li>
-    <li><a href='http://localhost:4567/user/account/transfer?to=:userId&amount=:value'>Transfer beetwen accounts: /user/account/transfer?to=:userId&amount=:value</a></li>
+    <li>List of users: <a href='http://localhost:4567/users'>/users</a></li>
+    <li>User login with ID: <a href='http://localhost:4567/login?id=:id'>/login?id=:id</a></li>
+    <li>User details:  <a href='http://localhost:4567/user'>/user</a></li>
+    <li>User Account details: <a href='http://localhost:4567/user/account'>/user/account</a></li>
+    <li>Deposit: <a href='http://localhost:4567/user/account/deposit?amount=:value'>/user/account/deposit?amount=:value</a></li>
+    <li>Transfer beetwen accounts: <a href='http://localhost:4567/user/account/transfer?to=:userId&amount=:value'>/user/account/transfer?to=:userId&amount=:value</a></li>
 </ul>
