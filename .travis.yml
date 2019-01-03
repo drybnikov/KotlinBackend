@@ -4,4 +4,4 @@ language: kotlin
 before_install:
   - chmod +x gradlew
 script:
-  - ./gradlew clean build --scan --build-cache --configure-on-demand
+  - ./gradlew clean build --configure-on-demand
