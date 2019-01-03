@@ -39,7 +39,7 @@ dependencies {
 
 jar {
     manifest {
-        attributes 'Main-Class': 'dr.kotliners.kotlinbackend.ContainerRunnerKt'
+        attributes 'Main-Class': 'dr.kotliners.kotlinbackend.KotlinBackendApp'
     }
     // Add this
     from {
