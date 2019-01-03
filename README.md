@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/drybnikov/KotlinBackend.svg)](https://travis-ci.org/drybnikov/KotlinBackend) [![Codecov](https://codecov.io/github/drybnikov/KotlinBackend/coverage.svg)](https://codecov.io/gh/drybnikov/KotlinBackend)
+[![Build Status](https://travis-ci.org/drybnikov/kotlinbackend.svg)](https://travis-ci.org/drybnikov/KotlinBackend) [![Codecov](https://codecov.io/github/drybnikov/KotlinBackend/coverage.svg)](https://codecov.io/gh/drybnikov/KotlinBackend)
 
 # Kotlin Backend
 Simple RESTful API on Kotlin (including data model and the backing implementation) for money transfers between accounts.
