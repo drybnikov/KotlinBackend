@@ -1,9 +1,9 @@
 package dr.kotliners.kotlinbackend.dao
 
 import dr.kotliners.kotlinbackend.exception.InsufficientFundsException
-import dr.kotliners.kotlinbackend.model.Transaction
 import dr.kotliners.kotlinbackend.model.TransactionDB
 import dr.kotliners.kotlinbackend.model.Transactions
+import dr.kotliners.kotlinbackend.service.TransferData
 import org.jetbrains.exposed.sql.StdOutSqlLogger
 import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -12,27 +12,26 @@ import java.math.BigDecimal
 import java.util.*
 import javax.inject.Inject
 
-class TransactionDao @Inject constructor(private val accountDao: AccountDao) {
+class TransactionDao @Inject constructor() {
 
-    fun storeTransaction(tr: Transaction) {
+    fun storeTransaction(transferData: TransferData): TransactionDB =
         transaction {
             addLogger(StdOutSqlLogger)
+            val accountDb =
+                transferData.account ?: throw IllegalArgumentException("Account :${transferData.account?.id} not found")
 
-            val accountDB = accountDao.findById(tr.accountId)
-            if (accountDB.amount.add(tr.value) < BigDecimal.ZERO) {
-                throw InsufficientFundsException(tr)
+            if (accountDb.amount.add(transferData.value) < BigDecimal.ZERO) {
+                throw InsufficientFundsException(transferData)
             }
 
-            accountDB.amount = accountDB.amount.add(tr.value)
-
+            accountDb.amount = accountDb.amount.add(transferData.value)
             TransactionDB.new {
-                account = accountDB
-                value = tr.value
-                type = tr.type
-                date = DateTime(tr.date)
+                account = accountDb
+                value = transferData.value
+                type = transferData.type
+                date = DateTime(System.currentTimeMillis())
             }
         }
-    }
 
     fun findByAccountId(accountId: UUID): List<TransactionDB> =
         transaction {

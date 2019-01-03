@@ -3,9 +3,8 @@ package dr.kotliners.kotlinbackend.service
 import dr.kotliners.kotlinbackend.dao.AccountDao
 import dr.kotliners.kotlinbackend.dao.TransactionDao
 import dr.kotliners.kotlinbackend.exception.OptimisticLockException
-import dr.kotliners.kotlinbackend.model.AccountDB
-import dr.kotliners.kotlinbackend.model.Transaction
-import dr.kotliners.kotlinbackend.model.TransactionType
+import dr.kotliners.kotlinbackend.model.*
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.util.*
@@ -14,68 +13,71 @@ import java.util.concurrent.Executors
 import java.util.concurrent.locks.StampedLock
 import javax.inject.Inject
 
-private const val POOL_SIZE = 4
-
 class TransferService @Inject constructor(
     private val accountDao: AccountDao,
-    private val transactionDao: TransactionDao
+    private val transactionDao: TransactionDao,
+    properties: Properties
 ) {
     private val LOG = LoggerFactory.getLogger(TransferService::class.java)
 
-    private val transferLocks = ConcurrentHashMap<Int, StampedLock>(POOL_SIZE * 2)
-    private val receivers = Executors.newFixedThreadPool(POOL_SIZE)
+    private val poolSize = properties.getProperty("transfer.receivers").toInt()
+    private val transferLocks = ConcurrentHashMap<Int, StampedLock>(poolSize * 2)
+    private val receivers = Executors.newFixedThreadPool(poolSize)
 
     fun depositMoney(userId: Int, depositString: String?): Transaction {
         val deposit = depositString.toBigDecimalOrThrow()
 
-        return updateAmount(userId, deposit, TransactionType.DEPOSIT)
+        return updateAmount(
+            TransferData(
+                userId = userId,
+                value = deposit,
+                type = TransactionType.DEPOSIT
+            )
+        )
     }
 
     fun transferMoney(sourceUserId: Int, destinationUserId: Int, transferString: String?): Transaction {
         val transferValue = transferString.toBigDecimalOrThrow()
 
-        val sendTransaction = updateAmount(sourceUserId, transferValue.negate(), TransactionType.TRANSFER)
-        receivers.submit {
-            updateAmount(destinationUserId, transferValue, TransactionType.TRANSFER)
+        return updateAmount(
+            TransferData(
+                userId = sourceUserId,
+                value = transferValue.negate()
+            )
+        ).also {
+            receivers.submit {
+                updateAmount(
+                    TransferData(
+                        userId = destinationUserId,
+                        value = transferValue
+                    )
+                )
+            }
         }
-        return sendTransaction
     }
 
     fun transactionHistory(accountId: UUID): List<Transaction> {
         return transactionDao.findByAccountId(accountId)
-            .map { Transaction(
-                id = it.id.value,
-                accountId = accountId,
-                value = it.value,
-                type = it.type,
-                date = it.date.millis
-            ) }
+            .map { it.toTransaction() }
     }
 
-    private fun updateAmount(userId: Int, value: BigDecimal, type: TransactionType): Transaction {
-        val lock = transferLocks.computeIfAbsent(userId) { StampedLock() }
-        var stamp = lock.tryOptimisticRead()
+    private fun updateAmount(transferData: TransferData): Transaction {
+        val lock = transferLocks.computeIfAbsent(transferData.userId) { StampedLock() }
+        transferData.readStamp = lock.tryOptimisticRead()
         try {
-            val account = findAccount(userId)
+            return transaction {
+                transferData.account = findAccount(transferData.userId)
 
-            val transaction = Transaction.transactionByType(account.id.value, value, type)
-            LOG.info(
-                "${transaction.type}:$value store. Current amount:${account.amount}, id:${transaction.id}. Optimistic Lock Valid:${lock.validate(
-                    stamp
-                )}"
-            )
-            stamp = storeTransaction(lock, stamp, transaction)
-
-            LOG.info(
-                "${transaction.type}:$value done. Current amount:${account.amount}, id:${transaction.id}. Optimistic Lock Valid:${lock.validate(
-                    stamp
-                )}"
-            )
-
-            return transaction
+                LOG.info(
+                    "${transferData.type}:${transferData.value} store. Current amount:${transferData.account?.amount}. Optimistic Lock Valid:${lock.validate(
+                        transferData.readStamp
+                    )}"
+                )
+                storeTransaction(lock, transferData)
+            }.toTransaction()
         } finally {
-            if (lock.tryConvertToWriteLock(stamp) != 0L) {
-                transferLocks.remove(userId)
+            if (lock.tryConvertToWriteLock(transferData.readStamp) != 0L) {
+                transferLocks.remove(transferData.userId)
             }
         }
     }
@@ -84,20 +86,33 @@ class TransferService @Inject constructor(
         return accountDao.findByUser(userId)
     }
 
-    private fun storeTransaction(lock: StampedLock, readStamp: Long, transaction: Transaction): Long {
-        var stamp = lock.tryConvertToWriteLock(readStamp)
+    private fun storeTransaction(lock: StampedLock, transferData: TransferData): TransactionDB {
+        val stamp = lock.tryConvertToWriteLock(transferData.readStamp)
         if (stamp == 0L) {
-            throw OptimisticLockException(transaction)
+            throw OptimisticLockException(transferData)
         } else {
             try {
-                transactionDao.storeTransaction(transaction)
+                return transactionDao.storeTransaction(transferData).apply {
+                    LOG.info(
+                        "$type:$value done. Current amount:${account.amount}, id:$id. Optimistic Lock Valid:${lock.validate(
+                            stamp
+                        )}"
+                    )
+                }
             } finally {
-                stamp = lock.tryConvertToOptimisticRead(stamp)
+                transferData.readStamp = lock.tryConvertToOptimisticRead(stamp)
             }
         }
-        return stamp
     }
 
     private fun String?.toBigDecimalOrThrow() =
         this?.toBigDecimalOrNull() ?: throw NumberFormatException("Amount:$this should be are number value")
 }
+
+data class TransferData(
+    val userId: Int,
+    var account: AccountDB? = null,
+    val value: BigDecimal,
+    val type: TransactionType = TransactionType.TRANSFER,
+    var readStamp: Long = 0
+)

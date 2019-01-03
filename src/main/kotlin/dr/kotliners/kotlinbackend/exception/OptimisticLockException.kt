@@ -1,6 +1,6 @@
 package dr.kotliners.kotlinbackend.exception
 
-import dr.kotliners.kotlinbackend.model.Transaction
+import dr.kotliners.kotlinbackend.service.TransferData
 
-class OptimisticLockException(transaction: Transaction) :
-    IllegalStateException("Optimistic lock exception: $transaction")
+class OptimisticLockException(transfer: TransferData) :
+    IllegalStateException("Optimistic lock exception: $transfer")

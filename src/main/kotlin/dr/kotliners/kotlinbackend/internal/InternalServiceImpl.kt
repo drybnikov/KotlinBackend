@@ -47,6 +47,7 @@ class InternalServiceImpl @Inject constructor(
     override fun transferMoney(sourceUserId: Int, destinationUserId: String?, amount: String?): Transaction {
         if (sourceUserId == destinationUserId?.toIntOrNull())
             throw IllegalArgumentException("Can not transfer to himself.")
+
         findUserById(destinationUserId?.toIntOrNull()).let {
             return transferService.transferMoney(
                 sourceUserId = sourceUserId,

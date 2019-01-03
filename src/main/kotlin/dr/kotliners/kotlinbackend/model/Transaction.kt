@@ -4,29 +4,16 @@ import org.jetbrains.exposed.dao.EntityID
 import org.jetbrains.exposed.dao.UUIDEntity
 import org.jetbrains.exposed.dao.UUIDEntityClass
 import org.jetbrains.exposed.dao.UUIDTable
+import org.joda.time.format.DateTimeFormat
 import java.math.BigDecimal
 import java.util.*
 
 data class Transaction(
     val id: UUID,
-    val accountId: UUID,
     val value: BigDecimal,
     val type: TransactionType,
-    val date: Long
-) {
-    companion object {
-        fun transactionByType(accountId: UUID, value: BigDecimal, type: TransactionType): Transaction {
-            val transactionId = UUID.randomUUID()
-            return Transaction(
-                id = transactionId,
-                accountId = accountId,
-                date = System.currentTimeMillis(),
-                type = type,
-                value = value
-            )
-        }
-    }
-}
+    val date: String
+)
 
 enum class TransactionType {
     TRANSFER,
@@ -49,3 +36,10 @@ class TransactionDB(id: EntityID<UUID>) : UUIDEntity(id) {
     var type by Transactions.type
     var date by Transactions.date
 }
+
+fun TransactionDB.toTransaction() = Transaction(
+    id = id.value,
+    value = value,
+    type = type,
+    date = date.toString(DateTimeFormat.fullDateTime())
+)
