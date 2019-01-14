@@ -48,12 +48,10 @@ class InternalServiceImpl @Inject constructor(
         if (sourceUserId == request?.userId?.toIntOrNull())
             throw IllegalArgumentException("Can not transfer to himself.")
 
-        findUserById(request?.userId?.toIntOrNull()).let {
-            return transferService.transferMoney(
-                sourceUserId = sourceUserId,
-                destinationUserId = it.id,
-                transferString = request?.amount
-            )
-        }
+        return transferService.transferMoney(
+            sourceUserId = sourceUserId,
+            destinationUserId = request?.userId?.toInt() ?: -1,
+            transferString = request?.amount
+        )
     }
 }

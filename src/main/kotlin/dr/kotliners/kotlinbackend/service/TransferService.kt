@@ -22,7 +22,6 @@ class TransferService @Inject constructor(
 
     private val poolSize = properties.getProperty("transfer.receivers").toInt()
     private val transferLocks = ConcurrentHashMap<Int, StampedLock>(poolSize * 2)
-    private val receivers = Executors.newFixedThreadPool(poolSize)
 
     fun depositMoney(userId: Int, depositString: String?): Transaction {
         val deposit = depositString.toBigDecimalOrThrow()
@@ -33,27 +32,26 @@ class TransferService @Inject constructor(
                 value = deposit,
                 type = TransactionType.DEPOSIT
             )
-        )
+        ).toTransaction()
     }
 
     fun transferMoney(sourceUserId: Int, destinationUserId: Int, transferString: String?): Transaction {
         val transferValue = transferString.toBigDecimalOrThrow()
 
-        return updateAmount(
-            TransferData(
-                userId = sourceUserId,
-                value = transferValue.negate()
-            )
-        ).also {
-            receivers.submit {
-                updateAmount(
-                    TransferData(
-                        userId = destinationUserId,
-                        value = transferValue
-                    )
+        return transaction {
+            updateAmount(
+                TransferData(
+                    userId = sourceUserId,
+                    value = transferValue.negate()
                 )
-            }
-        }
+            )
+            updateAmount(
+                TransferData(
+                    userId = destinationUserId,
+                    value = transferValue
+                )
+            )
+        }.toTransaction()
     }
 
     fun transactionHistory(accountId: UUID): List<Transaction> {
@@ -61,7 +59,7 @@ class TransferService @Inject constructor(
             .map { it.toTransaction() }
     }
 
-    private fun updateAmount(transferData: TransferData): Transaction {
+    private fun updateAmount(transferData: TransferData): TransactionDB {
         val lock = transferLocks.computeIfAbsent(transferData.userId) { StampedLock() }
         transferData.readStamp = lock.tryOptimisticRead()
         try {
@@ -74,7 +72,7 @@ class TransferService @Inject constructor(
                     )}"
                 )
                 storeTransaction(lock, transferData)
-            }.toTransaction()
+            }
         } finally {
             if (lock.tryConvertToWriteLock(transferData.readStamp) != 0L) {
                 transferLocks.remove(transferData.userId)

@@ -176,7 +176,7 @@ internal class KotlinBackendAppTest {
         LOG.info("GET: $ACCOUNT_URL -> $account")
 
         val transferTransaction: Transaction = givenPostResponse(TRANSFER_URL, sessionId, transferRequest)
-        assertEquals(transferTransaction.value, BigDecimal("-555.00"))
+        assertEquals(transferTransaction.value, BigDecimal("555.00"))
         LOG.info("POST: $TRANSFER_URL $transferRequest -> $transferTransaction")
 
         account = givenResponse(ACCOUNT_URL, sessionId)
@@ -197,6 +197,32 @@ internal class KotlinBackendAppTest {
         assertTrue(transaction.message.contains("Insufficient funds"))
 
         LOG.info("POST: $TRANSFER_URL $transferRequest -> $transaction")
+    }
+
+    @Test
+    @DisplayName("POST $TRANSFER_URL {userId:44,amount:666} (Cancel transfer if some error)")
+    fun `error when transfer to unknown account`() {
+        val transferRequest = givenTransferRequest(userId = "44", amount = "666")
+        val sessionId = loginUser(USER_2.id)
+
+        var account: Account = givenResponse(ACCOUNT_URL, sessionId)
+        val initialAmount = account.amount
+        val expectedAmount = BigDecimal("1000.00").plus(initialAmount)
+
+        val depositTransaction: Transaction =
+            givenPostResponse(DEPOSIT_URL, sessionId, givenDepositRequest(amount = "1000"))
+        LOG.info("POST: $DEPOSIT_URL -> $depositTransaction")
+
+        account = givenResponse(ACCOUNT_URL, sessionId)
+        assertEquals(account.amount, expectedAmount)
+        LOG.info("GET: $ACCOUNT_URL ->[expectedAmount:$expectedAmount] $account")
+
+        val transaction: ResponseError = givenPostResponse(TRANSFER_URL, sessionId, transferRequest)
+        assertTrue(transaction.message.contains("not found in database"))
+
+        account = givenResponse(ACCOUNT_URL, sessionId)
+        assertEquals(account.amount, expectedAmount)
+        LOG.info("GET: $ACCOUNT_URL ->[expectedAmount:$expectedAmount] $account")
     }
 
     private fun loginUser(userId: Int): String {
