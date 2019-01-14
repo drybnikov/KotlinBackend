@@ -6,6 +6,7 @@ import org.eclipse.jetty.util.log.Log
 import spark.Spark.*
 import spark.kotlin.after
 import spark.kotlin.get
+import spark.kotlin.post
 import javax.inject.Inject
 
 const val USER_ID = "userID"
@@ -39,8 +40,8 @@ class ServiceController {
             with(gateway) {
                 get("", routeUserInfo(), responseTransformer)
                 get("/account", routeUserAccountInfo(), responseTransformer)
-                get("/account/deposit", routeAccountDeposit(), responseTransformer) //Should be POST for Real API
-                get("/account/transfer", routeAccountTransfer(), responseTransformer) //Should be POST for Real API
+                post("/account/deposit", routeAccountDeposit(), responseTransformer)
+                post("/account/transfer", routeAccountTransfer(), responseTransformer)
             }
 
             exception(Exception::class.java) { e, _, res ->
@@ -52,7 +53,7 @@ class ServiceController {
             }
         }
 
-        get("/login", CONTENT_TYPE, gateway.routeLogin())
+        post("/login", CONTENT_TYPE, gateway.routeLogin())
 
         after { type(CONTENT_TYPE) }
 

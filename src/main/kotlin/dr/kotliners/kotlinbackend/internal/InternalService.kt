@@ -1,5 +1,6 @@
 package dr.kotliners.kotlinbackend.internal
 
+import dr.kotliners.kotlinbackend.controller.DepositRequest
 import dr.kotliners.kotlinbackend.model.Account
 import dr.kotliners.kotlinbackend.model.Transaction
 import dr.kotliners.kotlinbackend.model.User
@@ -13,7 +14,7 @@ interface InternalService {
 
     fun userAccount(userId: Int): Account
 
-    fun depositMoney(userId: Int, deposit: String?): Transaction
+    fun depositMoney(userId: Int, deposit: DepositRequest): Transaction
 
     fun transferMoney(sourceUserId: Int, destinationUserId: String?, amount: String?): Transaction
 }

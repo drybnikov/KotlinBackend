@@ -4,6 +4,7 @@ import com.despegar.http.client.HttpResponse
 import com.despegar.sparkjava.test.SparkServer
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import dr.kotliners.kotlinbackend.controller.DepositRequest
 import dr.kotliners.kotlinbackend.model.Account
 import dr.kotliners.kotlinbackend.model.ResponseError
 import dr.kotliners.kotlinbackend.model.Transaction
@@ -49,27 +50,27 @@ internal class KotlinBackendAppTest {
     }
 
     @Test
-    @DisplayName("GET /login?id=:id")
+    @DisplayName("POST /login?id=:id")
     fun getLogin() {
         val url = "/login?id=1"
         val sessionId = loginUser(USER_0.id)
 
         assertNotNull(sessionId)
 
-        LOG.info("GET: $url -> $sessionId")
+        LOG.info("POST: $url -> $sessionId")
     }
 
     @Test
-    @DisplayName("GET /login?id=unknown")
+    @DisplayName("POST /login?id=unknown")
     fun `error on login with unknown user id`() {
         val url = "/login?id=unknown"
 
-        val error: ResponseError = givenResponse(url)
+        val error: ResponseError = givenPostResponse(url)
 
         assertNotNull(error)
         assertEquals(error.message, "User not found.")
 
-        LOG.info("GET: $url -> $error")
+        LOG.info("POST: $url -> $error")
     }
 
     @Test
@@ -86,56 +87,53 @@ internal class KotlinBackendAppTest {
     }
 
     @Test
-    @DisplayName("GET /user/account/deposit?amount=1000 (user not logged in)")
+    @DisplayName("POST /user/account/deposit {'amount':'1000'} (user not logged in)")
     fun `error on deposit when user not logged in`() {
-        val url = "/user/account/deposit?amount=1000"
 
-        val error: ResponseError = givenResponse(url)
+        val error: ResponseError = givenPostResponse(DEPOSIT_URL, givenDepostRequest(amount = "1000"))
 
         assertNotNull(error)
         assertEquals(error.message, "User not login or session expired.")
 
-        LOG.info("GET: $url -> $error")
+        LOG.info("POST: $DEPOSIT_URL -> $error")
     }
 
     @Test
-    @DisplayName("GET /user/account/deposit?amount=1000 (user logged in)")
+    @DisplayName("POST /user/account/deposit {'amount':'1000'} (user logged in)")
     fun `deposit 1000 to current user account`() {
-        val url = "/user/account/deposit?amount=1000"
+        val url = "/user/account/deposit"
         val sessionId = loginUser(USER_0.id)
 
-        val transaction: Transaction = givenResponse(url, sessionId)
+        val transaction: Transaction = givenPostResponse(url, sessionId, givenDepostRequest(amount = "1000"))
 
         assertEquals(transaction.value, BigDecimal("1000.00"))
 
-        LOG.info("GET: $url -> $transaction")
+        LOG.info("POST: $url -> $transaction")
     }
 
     @Test
-    @DisplayName("GET /user/account/deposit?amount=1000 (Call twice)")
+    @DisplayName("POST /user/account/deposit {'amount':'1000'} (Call twice)")
     fun `error on deposit when call deposit two times`() {
         val sessionId = loginUser(USER_0.id)
 
         executor.submit {
-            val url2 = "/user/account/deposit?amount=500"
-            val errorTransaction: ResponseError = givenResponse(url2, sessionId)
+            val errorTransaction: ResponseError =
+                givenPostResponse(DEPOSIT_URL, sessionId, givenDepostRequest(amount = "1000"))
             assertTrue(errorTransaction.message.contains("Optimistic lock exception:"))
 
-            LOG.info("GET: $url2 -> $errorTransaction")
+            LOG.info("POST: $DEPOSIT_URL -> $errorTransaction")
         }
 
-        val url = "/user/account/deposit?amount=1000"
-        val transaction: Transaction = givenResponse(url, sessionId)
+        val transaction: Transaction = givenPostResponse(DEPOSIT_URL, sessionId, givenDepostRequest(amount = "1000"))
 
         assertEquals(transaction.value, BigDecimal("1000.00"))
 
-        LOG.info("GET: $url -> $transaction")
+        LOG.info("POST: $DEPOSIT_URL -> $transaction")
     }
 
     @Test
     @DisplayName("GET /user/account (before and after deposit)")
     fun `check account balance`() {
-        val depositUrl = "/user/account/deposit?amount=1000"
         val accountUrl = "/user/account"
         val sessionId = loginUser(USER_1.id)
 
@@ -143,9 +141,9 @@ internal class KotlinBackendAppTest {
         assertEquals(account.amount, BigDecimal("0.00"))
         LOG.info("GET: $accountUrl -> $account")
 
-        val transaction: Transaction = givenResponse(depositUrl, sessionId)
+        val transaction: Transaction = givenPostResponse(DEPOSIT_URL, sessionId, givenDepostRequest(amount = "1000"))
         assertEquals(transaction.value, BigDecimal("1000.00"))
-        LOG.info("GET: $depositUrl -> $transaction")
+        LOG.info("POST: $DEPOSIT_URL -> $transaction")
 
         account = givenResponse(accountUrl, sessionId)
         assertEquals(account.amount, BigDecimal("1000.00"))
@@ -153,23 +151,23 @@ internal class KotlinBackendAppTest {
     }
 
     @Test
-    @DisplayName("GET /user/account/transfer?to=:id&amount=:value")
+    @DisplayName("POST /user/account/transfer?to=:id&amount=:value")
     fun `transfer between accounts`() {
-        val depositUrl = "/user/account/deposit?amount=1000"
         val transferUrl = "/user/account/transfer?to=4&amount=555"
         val accountUrl = "/user/account"
         val sessionId = loginUser(USER_2.id)
 
-        val depositTransaction: Transaction = givenResponse(depositUrl, sessionId)
-        LOG.info("GET: $depositUrl -> $depositTransaction")
+        val depositTransaction: Transaction =
+            givenPostResponse(DEPOSIT_URL, sessionId, givenDepostRequest(amount = "1000"))
+        LOG.info("POST: $DEPOSIT_URL -> $depositTransaction")
 
         var account: Account = givenResponse(accountUrl, sessionId)
         assertEquals(account.amount, BigDecimal("1000.00"))
         LOG.info("GET: $accountUrl -> $account")
 
-        val transferTransaction: Transaction = givenResponse(transferUrl, sessionId)
+        val transferTransaction: Transaction = givenPostResponse(transferUrl, sessionId)
         assertEquals(transferTransaction.value, BigDecimal("-555.00"))
-        LOG.info("GET: $transferUrl -> $transferTransaction")
+        LOG.info("POST: $transferUrl -> $transferTransaction")
 
         account = givenResponse(accountUrl, sessionId)
         assertEquals(account.amount, BigDecimal("445.00"))
@@ -177,7 +175,7 @@ internal class KotlinBackendAppTest {
     }
 
     @Test
-    @DisplayName("GET /user/account/transfer?to=:id&amount=:value (Insufficient funds)")
+    @DisplayName("POST /user/account/transfer?to=:id&amount=:value (Insufficient funds)")
     fun `error when transfer more than amount`() {
         val transferUrl = "/user/account/transfer?to=1&amount=1000"
         val accountUrl = "/user/account"
@@ -186,17 +184,27 @@ internal class KotlinBackendAppTest {
         var account: Account = givenResponse(accountUrl, sessionId)
         LOG.info("GET: $accountUrl -> $account")
 
-        val transaction: ResponseError = givenResponse(transferUrl, sessionId)
+        val transaction: ResponseError = givenPostResponse(transferUrl, sessionId)
         assertTrue(transaction.message.contains("Insufficient funds"))
 
-        LOG.info("GET: $transferUrl -> $transaction")
+        LOG.info("POST: $transferUrl -> $transaction")
     }
 
     private fun loginUser(userId: Int): String {
-        val get = testServer.get("/login?id=$userId", false)
+        val get = testServer.post("/login?id=$userId", "", false)
         val httpResponse = testServer.execute(get)
 
         return httpResponse.headers()["Set-Cookie"]?.get(0) ?: ""
+    }
+
+    private inline fun <reified T> givenPostResponse(url: String, sessionId: String = "", body: String = ""): T {
+        val get = testServer.post(url, body, false).apply {
+            addHeader("Cookie", sessionId)
+        }
+        val httpResponse = testServer.execute(get)
+        println(String(httpResponse.body()))
+
+        return httpResponse.fromJson()
     }
 
     private inline fun <reified T> givenResponse(url: String, sessionId: String = ""): T {
@@ -211,6 +219,9 @@ internal class KotlinBackendAppTest {
 
     private inline fun <reified T> HttpResponse.fromJson(): T =
         gson.fromJson(String(body()), object : TypeToken<T>() {}.type)
+
+    private fun givenDepostRequest(amount: String?) =
+        gson.toJson(DepositRequest(amount = amount))
 
     companion object {
         lateinit var testServer: SparkServer<TestSparkApplication>
@@ -235,5 +246,7 @@ internal class KotlinBackendAppTest {
         private val USER_1 = User(name = "Bob", email = "bob@bob.kt", id = 2)
         private val USER_2 = User(name = "Carol", email = "carol@carol.kt", id = 3)
         private val USER_3 = User(name = "Dave", email = "dave@dave.kt", id = 4)
+
+        private val DEPOSIT_URL = "/user/account/deposit"
     }
 }

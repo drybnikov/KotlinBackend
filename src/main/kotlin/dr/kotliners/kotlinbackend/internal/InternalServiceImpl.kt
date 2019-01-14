@@ -1,5 +1,6 @@
 package dr.kotliners.kotlinbackend.internal
 
+import dr.kotliners.kotlinbackend.controller.DepositRequest
 import dr.kotliners.kotlinbackend.dao.AccountDao
 import dr.kotliners.kotlinbackend.dao.UserDao
 import dr.kotliners.kotlinbackend.model.*
@@ -36,10 +37,10 @@ class InternalServiceImpl @Inject constructor(
         )
     }
 
-    override fun depositMoney(userId: Int, deposit: String?): Transaction =
+    override fun depositMoney(userId: Int, deposit: DepositRequest): Transaction =
         transferService.depositMoney(
             userId = userId,
-            depositString = deposit
+            depositString = deposit.amount
         )
 
     override fun transferMoney(sourceUserId: Int, destinationUserId: String?, amount: String?): Transaction {

@@ -8,7 +8,8 @@ import spark.kotlin.RouteHandler
 import javax.inject.Inject
 
 class RouteServiceGateway @Inject constructor(
-    private val service: InternalService
+    private val service: InternalService,
+    private val transformer: JsonResponseTransformer
 ) {
     internal fun routeUsersList() = Route { _, _ ->
         service.users()
@@ -27,7 +28,7 @@ class RouteServiceGateway @Inject constructor(
         val userId = req.session().getUserId()
         service.depositMoney(
             userId = userId,
-            deposit = req.queryParams("amount")
+            deposit = transformer.fromJson(req.body())
         )
     }
 
@@ -52,3 +53,5 @@ class RouteServiceGateway @Inject constructor(
         return attribute<Int>(USER_ID) ?: throw IllegalArgumentException("User not login or session expired.")
     }
 }
+
+data class DepositRequest(val amount: String?)
