@@ -1,7 +1,6 @@
 package dr.kotliners.kotlinbackend.controller
 
 import dr.kotliners.kotlinbackend.internal.InternalService
-import dr.kotliners.kotlinbackend.model.User
 import spark.Route
 import spark.Session
 import spark.kotlin.RouteHandler
@@ -43,7 +42,9 @@ class RouteServiceGateway @Inject constructor(
 
     internal fun routeLogin(): RouteHandler.() -> Any {
         return {
-            val user = service.findUserById(queryParams("id").toIntOrNull())
+            val loginRequest: LoginRequest = transformer.fromJson(request.body())
+            val user = service.findUserById(loginRequest.userId?.toIntOrNull())
+
             session().attribute(USER_ID, user.id)
             "Hello ${user.name}."
         }
@@ -54,4 +55,8 @@ class RouteServiceGateway @Inject constructor(
     }
 }
 
-data class DepositRequest(val amount: String?)
+data class DepositRequest(val amount: String)
+
+data class LoginRequest(val userId: String?)
+
+data class TransferRequest(val userId: String, val amount: String)
