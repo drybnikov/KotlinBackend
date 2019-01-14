@@ -1,6 +1,7 @@
 package dr.kotliners.kotlinbackend.internal
 
 import dr.kotliners.kotlinbackend.controller.DepositRequest
+import dr.kotliners.kotlinbackend.controller.TransferRequest
 import dr.kotliners.kotlinbackend.dao.AccountDao
 import dr.kotliners.kotlinbackend.dao.UserDao
 import dr.kotliners.kotlinbackend.model.*
@@ -37,21 +38,21 @@ class InternalServiceImpl @Inject constructor(
         )
     }
 
-    override fun depositMoney(userId: Int, deposit: DepositRequest): Transaction =
+    override fun depositMoney(userId: Int, deposit: DepositRequest?): Transaction =
         transferService.depositMoney(
             userId = userId,
-            depositString = deposit.amount
+            depositString = deposit?.amount
         )
 
-    override fun transferMoney(sourceUserId: Int, destinationUserId: String?, amount: String?): Transaction {
-        if (sourceUserId == destinationUserId?.toIntOrNull())
+    override fun transferMoney(sourceUserId: Int, request: TransferRequest?): Transaction {
+        if (sourceUserId == request?.userId?.toIntOrNull())
             throw IllegalArgumentException("Can not transfer to himself.")
 
-        findUserById(destinationUserId?.toIntOrNull()).let {
+        findUserById(request?.userId?.toIntOrNull()).let {
             return transferService.transferMoney(
                 sourceUserId = sourceUserId,
                 destinationUserId = it.id,
-                transferString = amount
+                transferString = request?.amount
             )
         }
     }

@@ -6,6 +6,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dr.kotliners.kotlinbackend.controller.DepositRequest
 import dr.kotliners.kotlinbackend.controller.LoginRequest
+import dr.kotliners.kotlinbackend.controller.TransferRequest
 import dr.kotliners.kotlinbackend.model.Account
 import dr.kotliners.kotlinbackend.model.ResponseError
 import dr.kotliners.kotlinbackend.model.Transaction
@@ -63,7 +64,7 @@ internal class KotlinBackendAppTest {
     @Test
     @DisplayName("POST $LOGIN_URL {'userId':'unknown'}")
     fun `error on login with unknown user id`() {
-        val error: ResponseError = givenPostResponse(LOGIN_URL, "","{'userId':'unknown'}")
+        val error: ResponseError = givenPostResponse(LOGIN_URL, "", "null")
 
         assertNotNull(error)
         assertEquals(error.message, "User not found.")
@@ -91,6 +92,19 @@ internal class KotlinBackendAppTest {
 
         assertNotNull(error)
         assertEquals(error.message, "User not login or session expired.")
+
+        LOG.info("POST: $DEPOSIT_URL -> $error")
+    }
+
+    @Test
+    @DisplayName("POST $DEPOSIT_URL {unknown:unknown}")
+    fun `error on deposit when request contains wrong data`() {
+        val sessionId = loginUser(USER_0.id)
+
+        val error: ResponseError = givenPostResponse(DEPOSIT_URL, sessionId, "{unknown:unknown}")
+
+        assertNotNull(error)
+        assertEquals(error.message, "Amount:null should be are number value")
 
         LOG.info("POST: $DEPOSIT_URL -> $error")
     }
@@ -148,9 +162,9 @@ internal class KotlinBackendAppTest {
     }
 
     @Test
-    @DisplayName("POST $TRANSFER_URL")
+    @DisplayName("POST $TRANSFER_URL {userId:4,amount:555}")
     fun `transfer between accounts`() {
-        val transferUrl = "/user/account/transfer?to=4&amount=555"
+        val transferRequest = givenTransferRequest(userId = "4", amount = "555")
         val sessionId = loginUser(USER_2.id)
 
         val depositTransaction: Transaction =
@@ -161,9 +175,9 @@ internal class KotlinBackendAppTest {
         assertEquals(account.amount, BigDecimal("1000.00"))
         LOG.info("GET: $ACCOUNT_URL -> $account")
 
-        val transferTransaction: Transaction = givenPostResponse(transferUrl, sessionId)
+        val transferTransaction: Transaction = givenPostResponse(TRANSFER_URL, sessionId, transferRequest)
         assertEquals(transferTransaction.value, BigDecimal("-555.00"))
-        LOG.info("POST: $transferUrl -> $transferTransaction")
+        LOG.info("POST: $TRANSFER_URL $transferRequest -> $transferTransaction")
 
         account = givenResponse(ACCOUNT_URL, sessionId)
         assertEquals(account.amount, BigDecimal("445.00"))
@@ -171,18 +185,18 @@ internal class KotlinBackendAppTest {
     }
 
     @Test
-    @DisplayName("POST $TRANSFER_URL (Insufficient funds)")
+    @DisplayName("POST $TRANSFER_URL {userId:1,amount:1000} (Insufficient funds)")
     fun `error when transfer more than amount`() {
-        val transferUrl = "/user/account/transfer?to=1&amount=1000"
+        val transferRequest = givenTransferRequest(userId = "1", amount = "1000")
         val sessionId = loginUser(USER_3.id)
 
         val account: Account = givenResponse(ACCOUNT_URL, sessionId)
         LOG.info("GET: $ACCOUNT_URL -> $account")
 
-        val transaction: ResponseError = givenPostResponse(transferUrl, sessionId)
+        val transaction: ResponseError = givenPostResponse(TRANSFER_URL, sessionId, transferRequest)
         assertTrue(transaction.message.contains("Insufficient funds"))
 
-        LOG.info("POST: $transferUrl -> $transaction")
+        LOG.info("POST: $TRANSFER_URL $transferRequest -> $transaction")
     }
 
     private fun loginUser(userId: Int): String {
@@ -218,6 +232,9 @@ internal class KotlinBackendAppTest {
 
     private fun givenDepositRequest(amount: String) =
         gson.toJson(DepositRequest(amount = amount))
+
+    private fun givenTransferRequest(userId: String, amount: String) =
+        gson.toJson(TransferRequest(userId = userId, amount = amount))
 
     companion object {
         lateinit var testServer: SparkServer<TestSparkApplication>
